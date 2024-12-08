@@ -2,7 +2,6 @@ import numpy as np # type: ignore
 import matplotlib.pyplot as plt # type: ignore
 import heapq
 
-
 # # Constants
 ACTIONS = ["AU", "AR", "AD", "AL"]
 ACTIONS_TO_SYMBOLS = {
@@ -13,13 +12,11 @@ ACTIONS_TO_SYMBOLS = {
 }
 GOAL_STATES=[(4, 4)] # only state 21 is the goal state
 TERMINAL_STATES = [(4, 4)] # only state 21 is terminal. Optionally state with catnip is also terminal when explicitly enabled
-OBSTACLES = [(2, 1), (2, 2), (2, 3), (3, 2)] # locations of where obstace is present. Cat cannot move into these locations
-MONSTER_STATES = [(0, 3), (4, 1)] # locations of where monster is present.
+OBSTACLES = [(2, 2), (3, 2)] # locations of where obstace is present. Cat cannot move into these locations
+WATER_STATE = [(4, 2)] # locations of where monster is present.
 NUM_ROWS, NUM_COLS, NUM_STATES = 5, 5, 25
-OPTIMAL_POLICY = np.array(["AR", "AD", "AL", "AD", "AD", "AR", "AR", "AR", "AR", "AD", "AU", None, None, None, "AD", "AU", "AL", None, "AR", "AD", "AU", "AR", "AR", "AR", "AU"])
-OPTIMAL_POLICY_STATE_VALUES = np.array([2.6638, 2.9969, 2.8117, 3.6671, 4.8497, 2.9713, 3.5101, 4.0819, 4.8497, 7.1648, 2.5936, 0, 0, 0, 8.4687, 2.0992, 1.0849, 0, 8.6097, 9.5269, 1.0849, 4.9465, 8.4687, 9.5269, 0])
 
-class PrioritizedSweeping_CatVsMonsters:
+class PrioritizedSweeping_687GridWorld:
     
     def __init__(self, gamma, alpha, theta, n, num_rows, num_cols, epsilon):
         self.gamma = gamma
@@ -186,13 +183,13 @@ class PrioritizedSweeping_CatVsMonsters:
             "AR": (0, 1)    # Right
         }
         
-        if random_num <= 0.70:
+        if random_num <= 0.80:
             # cat moves in desired direction
             actual_movement_direction = action
-        elif 0.7 < random_num <= 0.82:
+        elif 0.80 < random_num <= 0.85:
             # cat moves 90 degrees to the right action
             actual_movement_direction = ACTIONS[(ACTIONS.index(action) + 1) % 4]
-        elif 0.82 < random_num <= 0.94:
+        elif 0.85 < random_num <= 0.90:
             # cat moves 90 degrees to the left action
             actual_movement_direction = ACTIONS[(ACTIONS.index(action) - 1) % 4]
         else:
@@ -206,9 +203,9 @@ class PrioritizedSweeping_CatVsMonsters:
             return 0
         elif curr_state not in GOAL_STATES and next_state in GOAL_STATES:
             return 10
-        elif next_state in MONSTER_STATES:
-            return -8
-        return -0.05
+        elif next_state in WATER_STATE:
+            return -10
+        return 0
 
     def get_initial_state(self):
         invalid_state_idxs = {convert_row_col_idx_to_state_idx(row, col, self.num_cols) for row, col in OBSTACLES}
@@ -262,8 +259,8 @@ def pretty_print_value_function(value_function, num_rows, num_cols):
 
 def display_results(total_iterations, policy, value_function):
     print(f"Total Iterations: {total_iterations} \n")
-    print(f"Mean Squared Error: {mean_squared(value_function, OPTIMAL_POLICY_STATE_VALUES)} \n")
-    print(f"Max Norm error: {max_norm(value_function, OPTIMAL_POLICY_STATE_VALUES)} \n")
+    # print(f"Mean Squared Error: {mean_squared(value_function, OPTIMAL_POLICY_STATE_VALUES)} \n")
+    # print(f"Max Norm error: {max_norm(value_function, OPTIMAL_POLICY_STATE_VALUES)} \n")
     pretty_print_policy(policy, NUM_ROWS, NUM_COLS)
     pretty_print_value_function(value_function, NUM_ROWS, NUM_COLS)
 
@@ -282,7 +279,7 @@ def mean_squared(v1, v2):
     return np.mean((v1 - v2) ** 2)
 
 if __name__ == "__main__":
-    model = PrioritizedSweeping_CatVsMonsters(gamma=0.925, alpha=0.05, theta=1e-2, n=5, num_rows=5, num_cols=5, epsilon=0.1)
+    model = PrioritizedSweeping_687GridWorld(gamma=0.925, alpha=0.05, theta=1e-2, n=5, num_rows=5, num_cols=5, epsilon=0.1)
     total_itereations, policy, value_function = model.run()
     display_results(total_itereations, policy, value_function)
     
