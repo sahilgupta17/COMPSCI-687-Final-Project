@@ -77,11 +77,12 @@ class PrioritizedSweeping_CatVsMonsters:
                 predecessors[next_state_idx].append((state_idx, action))
         return predecessors
     
-    def run(self):
+    def run(self, num_iterations=1000):
         total_iterations = 0
         priority_queue = []
+        learning_curve = []
 
-        while True:
+        for _ in range(num_iterations):
             total_iterations += 1
             state = self.get_initial_state()
             while state not in TERMINAL_STATES:
@@ -124,14 +125,19 @@ class PrioritizedSweeping_CatVsMonsters:
                 self.update_policy_and_value_function()
                 state = next_state
                 
+            mean_squared_error = estimate_mean_squared_error(self.V, OPTIMAL_POLICY_STATE_VALUES)
+            learning_curve.append(mean_squared_error)
+                
             if total_iterations % 500 == 0:
                 print(f"Total Iterations: {total_iterations}")
                 pretty_print_value_function(self.V, self.num_rows, self.num_cols)
-
+            
             if not priority_queue:
                 break
 
-        return total_iterations, self.policy, self.V
+        
+        return total_iterations, self.policy, self.V, learning_curve
+    
     
     def update_policy_and_value_function(self):
         for state_idx in range(self.num_states):
@@ -261,9 +267,9 @@ def pretty_print_value_function(value_function, num_rows, num_cols):
     print("\n")
 
 def display_results(total_iterations, policy, value_function):
-    print(f"Total Iterations: {total_iterations} \n")
-    print(f"Mean Squared Error: {mean_squared(value_function, OPTIMAL_POLICY_STATE_VALUES)} \n")
-    print(f"Max Norm error: {max_norm(value_function, OPTIMAL_POLICY_STATE_VALUES)} \n")
+    print(f"Total Iterations: {total_iterations}")
+    print(f"Mean Squared Error: {estimate_mean_squared_error(value_function, OPTIMAL_POLICY_STATE_VALUES):.4f}")
+    # print(f"Max Norm error: {max_norm(value_function, OPTIMAL_POLICY_STATE_VALUES):.4f}")
     pretty_print_policy(policy, NUM_ROWS, NUM_COLS)
     pretty_print_value_function(value_function, NUM_ROWS, NUM_COLS)
 
@@ -278,11 +284,12 @@ def plot_graph(x, y, xlabel, ylabel, title, save_fp):
     plt.savefig(save_fp, dpi=300)
     plt.close()
     
-def mean_squared(v1, v2):
+def estimate_mean_squared_error(v1, v2):
     return np.mean((v1 - v2) ** 2)
 
 if __name__ == "__main__":
-    model = PrioritizedSweeping_CatVsMonsters(gamma=0.925, alpha=0.05, theta=1e-2, n=5, num_rows=5, num_cols=5, epsilon=0.1)
-    total_itereations, policy, value_function = model.run()
+    model = PrioritizedSweeping_CatVsMonsters(gamma=0.925, alpha=0.1, theta=1e-4, n=5, num_rows=5, num_cols=5, epsilon=0.1)
+    total_itereations, policy, value_function, learning_curve = model.run(num_iterations=1000)
+    plot_graph(x=[i for i in range(len(learning_curve))], y=learning_curve, xlabel="Number of Iterations", ylabel="MSE Error", title="Learning Curve", save_fp="./output/prioritized-sweeping-cat-vs-monsters-learning-curve.png")
     display_results(total_itereations, policy, value_function)
     
